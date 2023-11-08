@@ -34,16 +34,20 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 		if (aKey.startsWith("dxp") && !bKey.startsWith("dxp")) {
 			return -1;
 		}
-		else if (aKey.startsWith("portal") && bKey.startsWith("dxp")) {
+
+		if (aKey.startsWith("portal") && bKey.startsWith("dxp")) {
 			return 1;
 		}
-		else if (aKey.startsWith("portal") && bKey.startsWith("commerce")) {
+
+		if (aKey.startsWith("portal") && bKey.startsWith("commerce")) {
 			return -1;
 		}
-		else if (aKey.startsWith("commerce") && !bKey.startsWith("commerce")) {
+
+		if (aKey.startsWith("commerce") && !bKey.startsWith("commerce")) {
 			return 1;
 		}
-		else if (!StringUtil.equals(_getProductMainVersion(aKey), _getProductMainVersion(bKey))) {
+
+		if (!StringUtil.equals(_getProductMainVersion(aKey), _getProductMainVersion(bKey))) {
 			Version aProductMainVersion = Version.parseVersion(_getProductMainVersion(aKey));
 			Version bProductMainVersion = Version.parseVersion(_getProductMainVersion(bKey));
 
@@ -56,10 +60,12 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 		if (BladeUtil.isEmpty(aProductMicroVersion)) {
 			return 1;
 		}
-		else if (BladeUtil.isEmpty(bProductMicroVersion)) {
+
+		if (BladeUtil.isEmpty(bProductMicroVersion)) {
 			return -1;
 		}
-		else if (Version.isVersion(aProductMicroVersion) && Version.isVersion(bProductMicroVersion)) {
+
+		if (Version.isVersion(aProductMicroVersion) && Version.isVersion(bProductMicroVersion)) {
 			Version aMicroVersion = Version.parseVersion(aProductMicroVersion);
 			Version bMicroVersion = Version.parseVersion(bProductMicroVersion);
 

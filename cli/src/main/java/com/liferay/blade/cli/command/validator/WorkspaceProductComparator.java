@@ -31,6 +31,8 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 		String aKey = aPair.first();
 		String bKey = bPair.first();
 
+		System.out.printf("Comparing %s and %s\n", aKey, bKey);
+
 		if (aKey.startsWith("dxp") && !bKey.startsWith("dxp")) {
 			return -1;
 		}

@@ -65,12 +65,8 @@ public class LiferayMoreVersionValidatorTest {
 		}
 
 		List<String> sorted = randomLines.stream(
-		).map(
-			line -> new Pair<String, ProductInfo>(line, new ProductInfo(Collections.emptyMap()))
 		).sorted(
-			new WorkspaceProductComparator()
-		).map(
-			Pair::first
+			new WorkspaceProductKeyComparator()
 		).collect(
 			Collectors.toList()
 		);

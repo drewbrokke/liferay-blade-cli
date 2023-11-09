@@ -13,48 +13,25 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-//import java.util.*;
 
 /**
  * @author Simon Jiang
  * @author Gregory Amerson
+ * @author Drew Brokke
  */
 public class WorkspaceProductKeyComparator implements Comparator<String> {
 
 	@Override
 	public int compare(String key1, String key2) {
-		return Comparator.comparing(
-			KeyInfo::getProductRank
-		).thenComparing(
-			KeyInfo::isQuarterly
-		).thenComparingInt(
-			KeyInfo::getMajorVersion
-		).thenComparingInt(
-			KeyInfo::getMinorVersion
-		).thenComparingInt(
-			KeyInfo::getMicroVersion
-		).reversed(
-		).compare(
-			new KeyInfo(key1), new KeyInfo(key2)
-		);
-	}
+		KeyInfo keyInfo1 = new KeyInfo(key1);
 
-	private int _toInteger(String s) {
-		StringBuilder sb = new StringBuilder();
-
-		for (char c : s.toCharArray()) {
-			if (Character.isDigit(c)) {
-				sb.append(c);
-			}
-		}
-
-		return Integer.parseInt(sb.toString());
+		return keyInfo1.compareTo(new KeyInfo(key2));
 	}
 
 	private static final List<String> _products = Collections.unmodifiableList(
 		Arrays.asList("commerce", "portal", "dxp"));
 
-	private class KeyInfo {
+	private static class KeyInfo implements Comparable<KeyInfo> {
 
 		public KeyInfo(String key) {
 			String[] parts = key.split("-");
@@ -72,29 +49,29 @@ public class WorkspaceProductKeyComparator implements Comparator<String> {
 
 				String[] quarterlyParts = parts[1].split("\\.");
 
-				majorVersion = _toInteger(quarterlyParts[0]);
-				minorVersion = _toInteger(quarterlyParts[1]);
-				microVersion = _toInteger(quarterlyParts[2]);
+				majorVersion = new Version(quarterlyParts[0]);
+				minorVersion = new Version(quarterlyParts[1]);
+				microVersion = new Version(quarterlyParts[2]);
 
 				return;
 			}
 
-			majorVersion = _toInteger(parts[1]);
+			majorVersion = new Version(parts[1]);
 
 			if (parts.length > 2) {
-				minorVersion = _toInteger(parts[2]);
+				minorVersion = new Version(parts[2]);
 			}
 		}
 
-		public int getMajorVersion() {
+		public Version getMajorVersion() {
 			return majorVersion;
 		}
 
-		public int getMicroVersion() {
+		public Version getMicroVersion() {
 			return microVersion;
 		}
 
-		public int getMinorVersion() {
+		public Version getMinorVersion() {
 			return minorVersion;
 		}
 
@@ -110,13 +87,80 @@ public class WorkspaceProductKeyComparator implements Comparator<String> {
 			return quarterly;
 		}
 
-		protected final int majorVersion;
-		protected int microVersion = 0;
-		protected int minorVersion = 0;
+		protected Version majorVersion;
+		protected Version microVersion = Version.BLANK;
+		protected Version minorVersion = Version.BLANK;
 		protected final String product;
 		protected final int productRank;
 		protected boolean quarterly = false;
 
+		@Override
+		public int compareTo(final KeyInfo keyInfo) {
+			return Comparator.comparing(
+					KeyInfo::getProductRank
+			).thenComparing(
+					KeyInfo::isQuarterly
+			).thenComparing(
+					KeyInfo::getMajorVersion
+			).thenComparing(
+					KeyInfo::getMinorVersion
+			).thenComparing(
+					KeyInfo::getMicroVersion
+			).reversed(
+			).compare(
+					this, keyInfo
+			);
+		}
+	}
+
+	private static class Version implements Comparable<Version> {
+		private int _number = 0;
+
+		public Version(String versionString) {
+			StringBuilder numberStringBuilder = new StringBuilder();
+			StringBuilder stringStringBuilder = new StringBuilder();
+
+			for (char c : versionString.toCharArray()) {
+				if (Character.isDigit(c)) {
+					numberStringBuilder.append(c);
+				}
+				else {
+					stringStringBuilder.append(c);
+				}
+			}
+
+			if (numberStringBuilder.length() > 0) {
+				_number = Integer.parseInt(numberStringBuilder.toString());
+			}
+
+			_string = stringStringBuilder.toString();
+		}
+
+		public int getNumber() {
+			return _number;
+		}
+
+		public String getString() {
+			return _string;
+		}
+
+		private String _string;
+
+		private Version() {
+		}
+
+		private static final Version BLANK = new Version();
+
+		@Override
+		public int compareTo(final Version version) {
+			return Comparator.comparingInt(
+					Version::getNumber
+			).thenComparing(
+					Version::getString
+			).compare(
+					this, version
+			);
+		}
 	}
 
 }

@@ -20,24 +20,25 @@ import java.util.Objects;
 /**
  * @author Simon Jiang
  * @author Gregory Amerson
+ * @author Drew Brokke
  */
 public class WorkspaceProductComparator implements Comparator<Pair<String, ProductInfo>> {
 
 	@Override
 	public int compare(Pair<String, ProductInfo> aPair, Pair<String, ProductInfo> bPair) {
 		return Comparator.comparing(
-			Key::getProductRank
+			KeyInfo::getProductRank
 		).thenComparing(
-			Key::isQuarterly
-		).thenComparingInt(
-			Key::getMajorVersion
-		).thenComparingInt(
-			Key::getMinorVersion
-		).thenComparingInt(
-			Key::getMicroVersion
+			KeyInfo::isQuarterly
+		).thenComparing(
+			KeyInfo::getMajorVersion
+		).thenComparing(
+			KeyInfo::getMinorVersion
+		).thenComparing(
+			KeyInfo::getMicroVersion
 		).reversed(
 		).compare(
-			new Key(aPair.first()), new Key(bPair.first())
+			new KeyInfo(aPair.first()), new KeyInfo(bPair.first())
 		);
 	}
 
@@ -53,12 +54,30 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 		return Integer.parseInt(sb.toString());
 	}
 
+	private VersionDetails _toVersionDetails(String s) {
+		StringBuilder numberStringBuilder = new StringBuilder();
+		StringBuilder stringStringBuilder = new StringBuilder();
+
+		for (char c : s.toCharArray()) {
+			if (Character.isDigit(c)) {
+				numberStringBuilder.append(c);
+			}
+			else {
+				stringStringBuilder.append(c);
+			}
+		}
+
+		return new VersionDetails(
+				Integer.parseInt(numberStringBuilder.toString()),
+				stringStringBuilder.toString());
+	}
+
 	private static final List<String> _products = Collections.unmodifiableList(
 		Arrays.asList("commerce", "portal", "dxp"));
 
-	private class Key {
+	private class KeyInfo {
 
-		public Key(String key) {
+		public KeyInfo(String key) {
 			String[] parts = key.split("-");
 
 			if (ArrayUtil.isEmpty(parts)) {
@@ -74,29 +93,29 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 
 				String[] quarterlyParts = parts[1].split("\\.");
 
-				majorVersion = _toInteger(quarterlyParts[0]);
-				minorVersion = _toInteger(quarterlyParts[1]);
-				microVersion = _toInteger(quarterlyParts[2]);
+				majorVersion = _toVersionDetails(quarterlyParts[0]);
+				minorVersion = _toVersionDetails(quarterlyParts[1]);
+				microVersion = _toVersionDetails(quarterlyParts[2]);
 
 				return;
 			}
 
-			majorVersion = _toInteger(parts[1]);
+			majorVersion = _toVersionDetails(parts[1]);
 
 			if (parts.length > 2) {
-				minorVersion = _toInteger(parts[2]);
+				minorVersion = _toVersionDetails(parts[2]);
 			}
 		}
 
-		public int getMajorVersion() {
+		public VersionDetails getMajorVersion() {
 			return majorVersion;
 		}
 
-		public int getMicroVersion() {
+		public VersionDetails getMicroVersion() {
 			return microVersion;
 		}
 
-		public int getMinorVersion() {
+		public VersionDetails getMinorVersion() {
 			return minorVersion;
 		}
 
@@ -112,13 +131,49 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 			return quarterly;
 		}
 
-		protected final int majorVersion;
-		protected int microVersion = 0;
-		protected int minorVersion = 0;
+		protected VersionDetails majorVersion;
+		protected VersionDetails microVersion = VersionDetails._BLANK;
+		protected VersionDetails minorVersion = VersionDetails._BLANK;
 		protected final String product;
 		protected final int productRank;
 		protected boolean quarterly = false;
 
+	}
+
+	private static class VersionDetails implements Comparable<VersionDetails> {
+		private final int _number;
+
+		public int getNumber() {
+			return _number;
+		}
+
+		public String getString() {
+			return _string;
+		}
+
+		private final String _string;
+
+		private VersionDetails(int number, String string) {
+			_number = number;
+			_string = string;
+		}
+
+		private static final VersionDetails _BLANK = new VersionDetails(0, "");
+
+		@Override
+		public int compareTo(VersionDetails versionDetails) {
+			if (versionDetails == null) {
+				return 1;
+			}
+
+			return Comparator.comparingInt(
+					VersionDetails::getNumber
+			).thenComparing(
+					Comparator.comparing(VersionDetails::getString).reversed()
+			).compare(
+				this, versionDetails
+			);
+		}
 	}
 
 }

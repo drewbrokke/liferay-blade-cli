@@ -15,8 +15,9 @@ import org.junit.Test;
 
 /**
  * @author Gregory Amerson
+ * @author Drew Brokke
  */
-public class WorkspaceProductComparatorTest {
+public class WorkspaceProductKeyComparatorTest {
 
 	@Test
 	public void testSortByReleaseDate() throws Exception {

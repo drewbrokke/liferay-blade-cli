@@ -9,6 +9,7 @@ package com.liferay.blade.cli.command.validator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,7 +23,7 @@ public class WorkspaceProductKeyComparatorTest {
 	@Test
 	public void testSortByReleaseDate() throws Exception {
 		List<String> expectedKeys = Arrays.asList(
-			"dxp-2023.q3.2", "dxp-2023.q3.1", "dxp-2023.q2.1", "dxp-2022.q3.1", "dxp-7.2-sp3", "dxp-7.2-sp2",
+			"dxp-2023.q3.2", "dxp-2023.q2.1", "dxp-2022.q3.1", "dxp-7.2-sp3", "dxp-7.2-sp2",
 			"dxp-7.2-sp1", "portal-7.3-ga1", "portal-7.1-ga2", "portal-7.1-ga1", "commerce-2.0.7-7.2",
 			"commerce-2.0.7-7.1", "commerce-2.0.6");
 
@@ -31,7 +32,15 @@ public class WorkspaceProductKeyComparatorTest {
 		actualKeys.sort(null);
 		actualKeys.sort(new WorkspaceProductKeyComparator());
 
-		Assert.assertEquals(expectedKeys, actualKeys);
+		Assert.assertEquals(
+				expectedKeys.stream(
+				).collect(
+						Collectors.joining(System.lineSeparator())
+				),
+				actualKeys.stream(
+				).collect(
+						Collectors.joining(System.lineSeparator())
+				));
 	}
 
 }

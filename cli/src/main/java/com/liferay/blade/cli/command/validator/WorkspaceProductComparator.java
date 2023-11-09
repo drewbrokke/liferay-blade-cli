@@ -5,172 +5,163 @@
 
 package com.liferay.blade.cli.command.validator;
 
-import aQute.bnd.version.Version;
+import com.liferay.blade.cli.util.ArrayUtil;
 
-import com.liferay.blade.cli.util.BladeUtil;
-import com.liferay.blade.cli.util.Pair;
-import com.liferay.blade.cli.util.ProductInfo;
-import com.liferay.blade.cli.util.StringUtil;
-
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Simon Jiang
  * @author Gregory Amerson
+ * @author Drew Brokke
  */
-public class WorkspaceProductComparator implements Comparator<Pair<String, ProductInfo>> {
+public class WorkspaceProductComparator implements Comparator<String> {
 
 	@Override
-	public int compare(Pair<String, ProductInfo> aPair, Pair<String, ProductInfo> bPair) {
-		String aKey = aPair.first();
-		String bKey = bPair.first();
+	public int compare(String key1, String key2) {
+		KeyInfo keyInfo1 = new KeyInfo(key1);
 
-		if (aKey.startsWith("dxp") && !bKey.startsWith("dxp")) {
-			return -1;
-		}
-		else if (aKey.startsWith("portal") && bKey.startsWith("dxp")) {
-			return 1;
-		}
-		else if (aKey.startsWith("portal") && bKey.startsWith("commerce")) {
-			return -1;
-		}
-		else if (aKey.startsWith("commerce") && !bKey.startsWith("commerce")) {
-			return 1;
-		}
-		else if (!StringUtil.isNullOrEmpty(_getProductQuarterVersion(aKey, 1)) &&
-				 StringUtil.isNullOrEmpty(_getProductQuarterVersion(bKey, 1))) {
-
-			return -1;
-		}
-		else if (!StringUtil.isNullOrEmpty(_getProductQuarterVersion(aKey, 1)) &&
-				 !StringUtil.isNullOrEmpty(_getProductQuarterVersion(bKey, 1))) {
-
-			if (!StringUtil.equals(_getProductQuarterVersion(aKey, 1), _getProductQuarterVersion(bKey, 1))) {
-				Version aYearVersion = Version.parseVersion(_getProductQuarterVersion(aKey, 1));
-				Version bYearVersion = Version.parseVersion(_getProductQuarterVersion(bKey, 1));
-
-				return -1 * aYearVersion.compareTo(bYearVersion);
-			}
-
-			String aProductQuarterVersion = _getProductQuarterVersion(aKey, 2);
-			String bProductQuarterVersion = _getProductQuarterVersion(bKey, 2);
-
-			if (BladeUtil.isEmpty(aProductQuarterVersion)) {
-				return 1;
-			}
-			else if (BladeUtil.isEmpty(bProductQuarterVersion)) {
-				return -1;
-			}
-			else if (!StringUtil.equals(aProductQuarterVersion, bProductQuarterVersion)) {
-				Version aQuarterVersion = Version.parseVersion(aProductQuarterVersion);
-				Version bQuarterVersion = Version.parseVersion(bProductQuarterVersion);
-
-				return -1 * aQuarterVersion.compareTo(bQuarterVersion);
-			}
-
-			String aProductQuarterMicroVersion = _getProductQuarterVersion(aKey, 3);
-			String bProductQuarterMicroVersion = _getProductQuarterVersion(bKey, 3);
-
-			if (BladeUtil.isEmpty(aProductQuarterMicroVersion)) {
-				return 1;
-			}
-			else if (BladeUtil.isEmpty(bProductQuarterMicroVersion)) {
-				return -1;
-			}
-			else if (!StringUtil.equals(aProductQuarterMicroVersion, bProductQuarterMicroVersion)) {
-				Version aMicroVersion = Version.parseVersion(aProductQuarterMicroVersion);
-				Version bMicroVersion = Version.parseVersion(bProductQuarterMicroVersion);
-
-				return -1 * aMicroVersion.compareTo(bMicroVersion);
-			}
-		}
-
-		if (!StringUtil.equals(_getProductMainVersion(aKey), _getProductMainVersion(bKey))) {
-			Version aProductMainVersion = Version.parseVersion(_getProductMainVersion(aKey));
-			Version bProductMainVersion = Version.parseVersion(_getProductMainVersion(bKey));
-
-			return -1 * aProductMainVersion.compareTo(bProductMainVersion);
-		}
-
-		String aProductMicroVersion = _getProductMicroVersion(aKey);
-		String bProductMicroVersion = _getProductMicroVersion(bKey);
-
-		if (BladeUtil.isEmpty(aProductMicroVersion)) {
-			return 1;
-		}
-		else if (BladeUtil.isEmpty(bProductMicroVersion)) {
-			return -1;
-		}
-		else if (Version.isVersion(aProductMicroVersion) && Version.isVersion(bProductMicroVersion)) {
-			Version aMicroVersion = Version.parseVersion(aProductMicroVersion);
-			Version bMicroVersion = Version.parseVersion(bProductMicroVersion);
-
-			return -1 * aMicroVersion.compareTo(bMicroVersion);
-		}
-
-		ProductInfo aProductInfo = aPair.second();
-		ProductInfo bProductInfo = bPair.second();
-
-		try {
-			DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("M/d/yyyy", Locale.ENGLISH);
-
-			LocalDate aDate = LocalDate.parse(aProductInfo.getReleaseDate(), dateTimeFormatter);
-			LocalDate bDate = LocalDate.parse(bProductInfo.getReleaseDate(), dateTimeFormatter);
-
-			return bDate.compareTo(aDate);
-		}
-		catch (Exception exception) {
-			String aMicroVersionPrefix = aProductMicroVersion.substring(0, 2);
-			String bMicroVersionPrefix = bProductMicroVersion.substring(0, 2);
-
-			if (!aMicroVersionPrefix.equalsIgnoreCase(bMicroVersionPrefix)) {
-				return -1 * aMicroVersionPrefix.compareTo(bMicroVersionPrefix);
-			}
-
-			String aMicroVersionString = aProductMicroVersion.substring(2);
-			String bMicroVersionString = bProductMicroVersion.substring(2);
-
-			return Integer.parseInt(bMicroVersionString) - Integer.parseInt(aMicroVersionString);
-		}
+		return keyInfo1.compareTo(new KeyInfo(key2));
 	}
 
-	private String _getProductMainVersion(String productKey) {
-		Matcher aMatcher = _versionPattern.matcher(productKey.substring(productKey.indexOf('-') + 1));
+	private static final List<String> _products = Collections.unmodifiableList(
+		Arrays.asList("commerce", "portal", "dxp"));
 
-		if (aMatcher.find()) {
-			return aMatcher.group(1);
+	private static class KeyInfo implements Comparable<KeyInfo> {
+
+		public KeyInfo(String key) {
+			String[] parts = key.split("-");
+
+			if (ArrayUtil.isEmpty(parts)) {
+				throw new IllegalArgumentException();
+			}
+
+			product = parts[0];
+
+			productRank = _products.indexOf(product);
+
+			if (Objects.equals(product, "dxp") && (parts.length == 2)) {
+				quarterly = true;
+
+				String[] quarterlyParts = parts[1].split("\\.");
+
+				majorVersion = new Version(quarterlyParts[0]);
+				minorVersion = new Version(quarterlyParts[1]);
+				microVersion = new Version(quarterlyParts[2]);
+
+				return;
+			}
+
+			majorVersion = new Version(parts[1]);
+
+			if (parts.length > 2) {
+				minorVersion = new Version(parts[2]);
+			}
 		}
 
-		return "";
-	}
-
-	private String _getProductMicroVersion(String productKey) {
-		String[] productKeyArrays = StringUtil.split(productKey, "-");
-
-		if (productKeyArrays.length > 2) {
-			return productKeyArrays[2];
+		@Override
+		public int compareTo(final KeyInfo keyInfo) {
+			return Comparator.comparing(
+				KeyInfo::getProductRank
+			).thenComparing(
+				KeyInfo::isQuarterly
+			).thenComparing(
+				KeyInfo::getMajorVersion
+			).thenComparing(
+				KeyInfo::getMinorVersion
+			).thenComparing(
+				KeyInfo::getMicroVersion
+			).reversed(
+			).compare(
+				this, keyInfo
+			);
 		}
 
-		return null;
-	}
-
-	private String _getProductQuarterVersion(String productKey, int pos) {
-		Matcher aMatcher = _versionQuaterPattern.matcher(productKey.substring(productKey.indexOf('-') + 1));
-
-		if (aMatcher.find()) {
-			return aMatcher.group(pos);
+		public Version getMajorVersion() {
+			return majorVersion;
 		}
 
-		return "";
+		public Version getMicroVersion() {
+			return microVersion;
+		}
+
+		public Version getMinorVersion() {
+			return minorVersion;
+		}
+
+		public String getProduct() {
+			return product;
+		}
+
+		public int getProductRank() {
+			return productRank;
+		}
+
+		public boolean isQuarterly() {
+			return quarterly;
+		}
+
+		protected Version majorVersion;
+		protected Version microVersion = Version.BLANK;
+		protected Version minorVersion = Version.BLANK;
+		protected final String product;
+		protected final int productRank;
+		protected boolean quarterly = false;
+
 	}
 
-	private static final Pattern _versionPattern = Pattern.compile("([0-9\\.]+).*");
-	private static final Pattern _versionQuaterPattern = Pattern.compile("(\\d{4})\\.[qQ](\\d)\\.(\\d)");
+	private static class Version implements Comparable<Version> {
+
+		public static final Version BLANK = new Version();
+
+		public Version(String versionString) {
+			StringBuilder numberStringBuilder = new StringBuilder();
+			StringBuilder stringStringBuilder = new StringBuilder();
+
+			for (char c : versionString.toCharArray()) {
+				if (Character.isDigit(c)) {
+					numberStringBuilder.append(c);
+				}
+				else {
+					stringStringBuilder.append(c);
+				}
+			}
+
+			if (numberStringBuilder.length() > 0) {
+				_number = Integer.parseInt(numberStringBuilder.toString());
+			}
+
+			_string = stringStringBuilder.toString();
+		}
+
+		@Override
+		public int compareTo(final Version version) {
+			return Comparator.comparingInt(
+				Version::getNumber
+			).thenComparing(
+				Version::getString
+			).compare(
+				this, version
+			);
+		}
+
+		public int getNumber() {
+			return _number;
+		}
+
+		public String getString() {
+			return _string;
+		}
+
+		private Version() {
+		}
+
+		private int _number = 0;
+		private String _string;
+
+	}
 
 }

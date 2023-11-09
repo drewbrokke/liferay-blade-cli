@@ -31,6 +31,8 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 	public int compare(Pair<String, ProductInfo> aPair, Pair<String, ProductInfo> bPair) {
 		return _productKeyComparator.thenComparing(
 			_productInfoComparator
+		).thenComparing(
+			(pair1, pair2) -> _keyVersionComparator.compare(new Key(pair1.first()), new Key(pair2.first()))
 		).reversed(
 		).compare(
 			aPair, bPair
@@ -54,8 +56,15 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 
 	private final Comparator<Key> _keyProductComparator = Comparator.comparingInt(
 		key -> _products.indexOf(key.getProduct()));
+	private final Comparator<Key> _keyVersionComparator = Comparator.comparingInt(
+		Key::getMajorVersion
+	).thenComparingInt(
+		Key::getMinorVersion
+	).thenComparingInt(
+		Key::getMicroVersion
+	);
 
-	private final Comparator<Key> _keyVersionComparator = (key1, key2) -> {
+	private final Comparator<Key> _keyVersionConditionalComparator = (key1, key2) -> {
 		if (!Objects.equals(key1.getProduct(), key2.getProduct())) {
 			return 0;
 		}
@@ -64,15 +73,7 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 			return 0;
 		}
 
-		return Comparator.comparingInt(
-			Key::getMajorVersion
-		).thenComparingInt(
-			Key::getMinorVersion
-		).thenComparingInt(
-			Key::getMicroVersion
-		).compare(
-			key1, key2
-		);
+		return _keyVersionComparator.compare(key1, key2);
 	};
 
 	private final Comparator<Pair<String, ProductInfo>> _productInfoComparator = (pair1, pair2) -> {
@@ -95,7 +96,7 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 
 	private final Comparator<Pair<String, ProductInfo>> _productKeyComparator =
 		(pair1, pair2) -> _keyProductComparator.thenComparing(
-			_keyVersionComparator
+			_keyVersionConditionalComparator
 		).compare(
 			new Key(pair1.first()), new Key(pair2.first())
 		);

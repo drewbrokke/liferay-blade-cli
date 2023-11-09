@@ -428,19 +428,22 @@ public class BladeUtil {
 		).stream(
 		).filter(
 			key -> Objects.nonNull(productInfos.get(key))
-		).map(
-			key -> new Pair<>(key, new ProductInfo((Map<String, String>)productInfos.get(key)))
 		).filter(
-			pair -> {
-				ProductInfo productInfo = pair.second();
+			key -> {
+				ProductInfo productInfo = new ProductInfo((Map<String, String>)productInfos.get(key));
 
-				return Objects.nonNull(productInfo.getTargetPlatformVersion()) &&
-					   (!promoted || productInfo.isPromoted());
+				if (productInfo.getTargetPlatformVersion() == null) {
+					return false;
+				}
+
+				if (promoted && !productInfo.isPromoted()) {
+					return false;
+				}
+
+				return true;
 			}
 		).sorted(
 			new WorkspaceProductComparator()
-		).map(
-			Pair::first
 		).collect(
 			Collectors.toList()
 		);

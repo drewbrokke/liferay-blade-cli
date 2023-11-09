@@ -21,27 +21,35 @@ public class WorkspaceProductComparatorTest {
 
 	@Test
 	public void testSortByReleaseDate() throws Exception {
-		Assert.assertArrayEquals(
-			new String[] {
-				"dxp-2023.q3.2", "dxp-2023.q3.1", "dxp-2023.q2.1", "dxp-2022.q3.1", "dxp-7.2-sp1", "dxp-7.2-sp3",
-				"dxp-7.2-sp2", "portal-7.3-ga1", "portal-7.1-ga2", "portal-7.1-ga1"
-			},
-			Arrays.stream(
-				new String[][] {
-					{"dxp-7.2-sp1", "10/4/2019"}, {"dxp-7.2-sp2", "12/22/2018"}, {"dxp-7.2-sp3", "5/31/2019"},
-					{"portal-7.1-ga1", "1/31/2011"}, {"portal-7.1-ga2", "1/31/2012"}, {"portal-7.3-ga1", "6/29/2020"},
-					{"dxp-2022.q3.1", "6/29/2022"}, {"dxp-2023.q2.1", "6/29/2023"}, {"dxp-2023.q3.1", "7/29/2023"},
-					{"dxp-2023.q3.2", "8/29/2023"}
-				}
-			).map(
-				strings -> new Pair<>(strings[0], new ProductInfo(Collections.singletonMap("releaseDate", strings[1])))
-			).sorted(
-				new WorkspaceProductComparator()
-			).map(
-				Pair::first
-			).toArray(
-				String[]::new
-			));
+		String[] expected = {
+			"dxp-2023.q3.2", "dxp-2023.q3.1", "dxp-2023.q2.1", "dxp-2022.q3.1", "dxp-7.2-sp1", "dxp-7.2-sp3",
+			"dxp-7.2-sp2", "portal-7.3-ga1", "portal-7.1-ga2", "portal-7.1-ga1", "commerce-2.0.7-7.2",
+			"commerce-2.0.7-7.1", "commerce-2.0.6"
+		};
+		String[] actual = Arrays.stream(
+			new String[][] {
+				{"dxp-7.2-sp2", "12/22/2018"}, {"dxp-7.2-sp1", "10/4/2019"}, {"portal-7.1-ga1", "1/31/2011"},
+				{"commerce-2.0.7-7.1", "1/31/2012"}, {"commerce-2.0.7-7.2", "1/31/2012"},
+				{"dxp-2023.q3.2", "8/29/2023"}, {"dxp-2023.q2.1", "6/29/2023"}, {"commerce-2.0.6", "1/31/2011"},
+				{"portal-7.3-ga1", "6/29/2020"}, {"dxp-7.2-sp3", "5/31/2019"}, {"dxp-2022.q3.1", "6/29/2022"},
+				{"dxp-2023.q3.1", "7/29/2023"}, {"portal-7.1-ga2", "1/31/2012"}
+			}
+		).map(
+			strings -> new Pair<>(strings[0], new ProductInfo(Collections.singletonMap("releaseDate", strings[1])))
+		).sorted(
+			new WorkspaceProductComparator()
+		).map(
+			Pair::first
+		).toArray(
+			String[]::new
+		);
+
+		System.out.println("expected");
+		System.out.println("expected = " + Arrays.toString(expected));
+		System.out.println("actual");
+		System.out.println("actual = " + Arrays.toString(actual));
+
+		Assert.assertArrayEquals(expected, actual);
 	}
 
 }

@@ -5,20 +5,21 @@
 
 package com.liferay.blade.cli.command.validator;
 
-import aQute.bnd.version.Version;
-
-import com.liferay.blade.cli.util.BladeUtil;
+import com.liferay.blade.cli.util.ArrayUtil;
 import com.liferay.blade.cli.util.Pair;
 import com.liferay.blade.cli.util.ProductInfo;
-import com.liferay.blade.cli.util.StringUtil;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Objects;
+
+//import java.util.*;
 
 /**
  * @author Simon Jiang
@@ -28,54 +29,55 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 
 	@Override
 	public int compare(Pair<String, ProductInfo> aPair, Pair<String, ProductInfo> bPair) {
-		String aKey = aPair.first();
-		String bKey = bPair.first();
+		return _productKeyComparator.thenComparing(
+			_productInfoComparator
+		).reversed(
+		).compare(
+			aPair, bPair
+		);
+	}
 
-		System.out.printf("Comparing %s and %s\n", aKey, bKey);
+	private int _toInteger(String s) {
+		StringBuilder sb = new StringBuilder();
 
-		if (aKey.startsWith("dxp") && !bKey.startsWith("dxp")) {
-			return -1;
+		for (char c : s.toCharArray()) {
+			if (Character.isDigit(c)) {
+				sb.append(c);
+			}
 		}
 
-		if (aKey.startsWith("portal") && bKey.startsWith("dxp")) {
-			return 1;
+		return Integer.parseInt(sb.toString());
+	}
+
+	private static final List<String> _products = Collections.unmodifiableList(
+		Arrays.asList("commerce", "portal", "dxp"));
+
+	private final Comparator<Key> _keyProductComparator = Comparator.comparingInt(
+		key -> _products.indexOf(key.getProduct()));
+
+	private final Comparator<Key> _keyVersionComparator = (key1, key2) -> {
+		if (!Objects.equals(key1.getProduct(), key2.getProduct())) {
+			return 0;
 		}
 
-		if (aKey.startsWith("portal") && bKey.startsWith("commerce")) {
-			return -1;
+		if (Objects.equals(key1.getProduct(), "dxp")) {
+			return 0;
 		}
 
-		if (aKey.startsWith("commerce") && !bKey.startsWith("commerce")) {
-			return 1;
-		}
+		return Comparator.comparingInt(
+			Key::getMajorVersion
+		).thenComparingInt(
+			Key::getMinorVersion
+		).thenComparingInt(
+			Key::getMicroVersion
+		).compare(
+			key1, key2
+		);
+	};
 
-		if (!StringUtil.equals(_getProductMainVersion(aKey), _getProductMainVersion(bKey))) {
-			Version aProductMainVersion = Version.parseVersion(_getProductMainVersion(aKey));
-			Version bProductMainVersion = Version.parseVersion(_getProductMainVersion(bKey));
-
-			return -1 * aProductMainVersion.compareTo(bProductMainVersion);
-		}
-
-		String aProductMicroVersion = _getProductMicroVersion(aKey);
-		String bProductMicroVersion = _getProductMicroVersion(bKey);
-
-		if (BladeUtil.isEmpty(aProductMicroVersion)) {
-			return 1;
-		}
-
-		if (BladeUtil.isEmpty(bProductMicroVersion)) {
-			return -1;
-		}
-
-		if (Version.isVersion(aProductMicroVersion) && Version.isVersion(bProductMicroVersion)) {
-			Version aMicroVersion = Version.parseVersion(aProductMicroVersion);
-			Version bMicroVersion = Version.parseVersion(bProductMicroVersion);
-
-			return -1 * aMicroVersion.compareTo(bMicroVersion);
-		}
-
-		ProductInfo aProductInfo = aPair.second();
-		ProductInfo bProductInfo = bPair.second();
+	private final Comparator<Pair<String, ProductInfo>> _productInfoComparator = (pair1, pair2) -> {
+		ProductInfo aProductInfo = pair1.second();
+		ProductInfo bProductInfo = pair2.second();
 
 		try {
 			DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("M/d/yyyy", Locale.ENGLISH);
@@ -83,43 +85,73 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 			LocalDate aDate = LocalDate.parse(aProductInfo.getReleaseDate(), dateTimeFormatter);
 			LocalDate bDate = LocalDate.parse(bProductInfo.getReleaseDate(), dateTimeFormatter);
 
-			return bDate.compareTo(aDate);
+			return aDate.compareTo(bDate);
 		}
 		catch (Exception exception) {
-			String aMicroVersionPrefix = aProductMicroVersion.substring(0, 2);
-			String bMicroVersionPrefix = bProductMicroVersion.substring(0, 2);
+		}
 
-			if (!aMicroVersionPrefix.equalsIgnoreCase(bMicroVersionPrefix)) {
-				return -1 * aMicroVersionPrefix.compareTo(bMicroVersionPrefix);
+		return 0;
+	};
+
+	private final Comparator<Pair<String, ProductInfo>> _productKeyComparator =
+		(pair1, pair2) -> _keyProductComparator.thenComparing(
+			_keyVersionComparator
+		).compare(
+			new Key(pair1.first()), new Key(pair2.first())
+		);
+
+	private class Key {
+
+		public Key(String key) {
+			String[] parts = key.split("-");
+
+			if (ArrayUtil.isEmpty(parts)) {
+				throw new IllegalArgumentException();
 			}
 
-			String aMicroVersionString = aProductMicroVersion.substring(2);
-			String bMicroVersionString = bProductMicroVersion.substring(2);
+			product = parts[0];
 
-			return Integer.parseInt(bMicroVersionString) - Integer.parseInt(aMicroVersionString);
-		}
-	}
+			if (Objects.equals(product, "dxp") && (parts.length == 2)) {
+				quarterly = true;
 
-	private String _getProductMainVersion(String productKey) {
-		Matcher aMatcher = _versionPattern.matcher(productKey.substring(productKey.indexOf('-') + 1));
+				String[] quarterlyParts = parts[1].split("\\.");
 
-		if (aMatcher.find()) {
-			return aMatcher.group(1);
-		}
+				majorVersion = _toInteger(quarterlyParts[0]);
+				minorVersion = _toInteger(quarterlyParts[1]);
+				microVersion = _toInteger(quarterlyParts[2]);
 
-		return "";
-	}
+				return;
+			}
 
-	private String _getProductMicroVersion(String productKey) {
-		String[] prodcutKeyArrays = StringUtil.split(productKey, "-");
+			majorVersion = _toInteger(parts[1]);
 
-		if (prodcutKeyArrays.length > 2) {
-			return prodcutKeyArrays[2];
+			if (parts.length > 2) {
+				minorVersion = _toInteger(parts[2]);
+			}
 		}
 
-		return null;
-	}
+		public int getMajorVersion() {
+			return majorVersion;
+		}
 
-	private static final Pattern _versionPattern = Pattern.compile("([0-9\\.]+).*");
+		public int getMicroVersion() {
+			return microVersion;
+		}
+
+		public int getMinorVersion() {
+			return minorVersion;
+		}
+
+		public String getProduct() {
+			return product;
+		}
+
+		protected final int majorVersion;
+		protected int microVersion = 0;
+		protected int minorVersion = 0;
+		protected final String product;
+		protected boolean quarterly = false;
+
+	}
 
 }

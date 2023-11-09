@@ -6,8 +6,6 @@
 package com.liferay.blade.cli.command.validator;
 
 import com.liferay.blade.cli.util.ArrayUtil;
-import com.liferay.blade.cli.util.Pair;
-import com.liferay.blade.cli.util.ProductInfo;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,23 +19,23 @@ import java.util.Objects;
  * @author Simon Jiang
  * @author Gregory Amerson
  */
-public class WorkspaceProductComparator implements Comparator<Pair<String, ProductInfo>> {
+public class WorkspaceProductKeyComparator implements Comparator<String> {
 
 	@Override
-	public int compare(Pair<String, ProductInfo> aPair, Pair<String, ProductInfo> bPair) {
+	public int compare(String key1, String key2) {
 		return Comparator.comparing(
-			Key::getProductRank
+			KeyInfo::getProductRank
 		).thenComparing(
-			Key::isQuarterly
+			KeyInfo::isQuarterly
 		).thenComparingInt(
-			Key::getMajorVersion
+			KeyInfo::getMajorVersion
 		).thenComparingInt(
-			Key::getMinorVersion
+			KeyInfo::getMinorVersion
 		).thenComparingInt(
-			Key::getMicroVersion
+			KeyInfo::getMicroVersion
 		).reversed(
 		).compare(
-			new Key(aPair.first()), new Key(bPair.first())
+			new KeyInfo(key1), new KeyInfo(key2)
 		);
 	}
 
@@ -56,9 +54,9 @@ public class WorkspaceProductComparator implements Comparator<Pair<String, Produ
 	private static final List<String> _products = Collections.unmodifiableList(
 		Arrays.asList("commerce", "portal", "dxp"));
 
-	private class Key {
+	private class KeyInfo {
 
-		public Key(String key) {
+		public KeyInfo(String key) {
 			String[] parts = key.split("-");
 
 			if (ArrayUtil.isEmpty(parts)) {

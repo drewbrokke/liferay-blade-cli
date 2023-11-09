@@ -8,7 +8,7 @@ package com.liferay.blade.cli.util;
 import com.liferay.blade.cli.BladeCLI;
 import com.liferay.blade.cli.Extensions;
 import com.liferay.blade.cli.command.SamplesCommand;
-import com.liferay.blade.cli.command.validator.WorkspaceProductComparator;
+import com.liferay.blade.cli.command.validator.WorkspaceProductKeyComparator;
 import com.liferay.project.templates.ProjectTemplates;
 import com.liferay.project.templates.extensions.util.ProjectTemplatesUtil;
 
@@ -428,19 +428,22 @@ public class BladeUtil {
 		).stream(
 		).filter(
 			key -> Objects.nonNull(productInfos.get(key))
-		).map(
-			key -> new Pair<>(key, new ProductInfo((Map<String, String>)productInfos.get(key)))
 		).filter(
-			pair -> {
-				ProductInfo productInfo = pair.second();
+			key -> {
+				ProductInfo productInfo = new ProductInfo((Map<String, String>)productInfos.get(key));
 
-				return Objects.nonNull(productInfo.getTargetPlatformVersion()) &&
-					   (!promoted || productInfo.isPromoted());
+				if (productInfo.getTargetPlatformVersion() == null) {
+					return false;
+				}
+
+				if (promoted && !productInfo.isPromoted()) {
+					return false;
+				}
+
+				return true;
 			}
 		).sorted(
-			new WorkspaceProductComparator()
-		).map(
-			Pair::first
+			new WorkspaceProductKeyComparator()
 		).collect(
 			Collectors.toList()
 		);

@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
 package com.liferay.blade.cli.command.validator;
 
 import java.util.Arrays;
@@ -15,7 +20,7 @@ public class ProductKeyUtil {
 
 	public static final Pattern productKeyCommercePattern = Pattern.compile(
 		"^(?<product>commerce)-(?<major>[1-9]\\.\\d\\.\\d)(?:-(?<minor>[1-9]\\.\\d))?$");
-	public static final Pattern productKeyDXPNonQuarterlyPattern = Pattern.compile(
+	public static final Pattern productKeyDXPNonquarterlyPattern = Pattern.compile(
 		"^(?<product>dxp)-(?<major>[1-9]\\.\\d)-(?<minor>(?:de|ep|fp|ga|sp|u)\\d+)$");
 	public static final Pattern productKeyDXPQuarterlyPattern = Pattern.compile(
 		"^(?<product>dxp)-(?<major>2\\d{3})\\.(?<minor>q[1234])\\.(?<micro>\\d+)$");
@@ -31,8 +36,8 @@ public class ProductKeyUtil {
 	}
 
 	public static ProductKeyInfo createProductKeyInfo(String productKey) {
-		Matcher matcher = _firstMatches(
-			productKey, productKeyDXPQuarterlyPattern, productKeyDXPNonQuarterlyPattern, productKeyPortalPattern,
+		Matcher matcher = _getFirstMatchingMatcher(
+			productKey, productKeyDXPQuarterlyPattern, productKeyDXPNonquarterlyPattern, productKeyPortalPattern,
 			productKeyCommercePattern);
 
 		if (matcher == null) {
@@ -48,9 +53,7 @@ public class ProductKeyUtil {
 
 				productKeyInfo.setProductRank(ProductKeyUtil.products.indexOf(group));
 			});
-		_withGroup(
-			matcher, "major",
-			group -> productKeyInfo.setMajorProductKeyVersion(new ProductKeyVersion(group)));
+		_withGroup(matcher, "major", group -> productKeyInfo.setMajorProductKeyVersion(new ProductKeyVersion(group)));
 		_withGroup(
 			matcher, "minor",
 			group -> {
@@ -64,18 +67,9 @@ public class ProductKeyUtil {
 					productKeyInfo.setQuarterly(true);
 				}
 			});
-		_withGroup(
-			matcher, "micro",
-			group -> productKeyInfo.setMicroProductKeyVersion(new ProductKeyVersion(group)));
+		_withGroup(matcher, "micro", group -> productKeyInfo.setMicroProductKeyVersion(new ProductKeyVersion(group)));
 
 		return productKeyInfo;
-	}
-
-	private static void _withGroup(Matcher matcher, String groupName, Consumer<String> consumer) {
-		try {
-			 consumer.accept(matcher.group(groupName));
-		} catch (Exception ignored) {
-		}
 	}
 
 	public static boolean verifyCommerceWorkspaceProduct(String product) {
@@ -84,10 +78,10 @@ public class ProductKeyUtil {
 
 	public static boolean verifyPortalDxpWorkspaceProduct(String product) {
 		return _matchesAny(
-			product, productKeyDXPQuarterlyPattern, productKeyDXPNonQuarterlyPattern, productKeyPortalPattern);
+			product, productKeyDXPQuarterlyPattern, productKeyDXPNonquarterlyPattern, productKeyPortalPattern);
 	}
 
-	private static Matcher _firstMatches(String s, Pattern... patterns) {
+	private static Matcher _getFirstMatchingMatcher(String s, Pattern... patterns) {
 		for (Pattern pattern : patterns) {
 			Matcher matcher = pattern.matcher(s);
 
@@ -100,13 +94,21 @@ public class ProductKeyUtil {
 	}
 
 	private static boolean _matchesAny(String s, Pattern... patterns) {
-		Matcher matcher = _firstMatches(s, patterns);
+		Matcher matcher = _getFirstMatchingMatcher(s, patterns);
 
 		if (matcher != null) {
 			return true;
 		}
 
 		return false;
+	}
+
+	private static void _withGroup(Matcher matcher, String groupName, Consumer<String> consumer) {
+		try {
+			consumer.accept(matcher.group(groupName));
+		}
+		catch (Exception exception) {
+		}
 	}
 
 }

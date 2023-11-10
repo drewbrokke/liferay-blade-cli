@@ -86,8 +86,6 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 
 import org.gradle.internal.impldep.com.google.common.base.Strings;
 
-import org.osgi.framework.Version;
-
 /**
  * @author Gregory Amerson
  * @author David Truong
@@ -114,34 +112,6 @@ public class BladeUtil {
 		InetSocketAddress remoteAddress = new InetSocketAddress(host, port);
 
 		return _canConnect(localAddress, remoteAddress);
-	}
-
-	public static int compareVersions(Version v1, Version v2) {
-		if (v2 == v1) {
-			return 0;
-		}
-
-		int result = v1.getMajor() - v2.getMajor();
-
-		if (result != 0) {
-			return result;
-		}
-
-		result = v1.getMinor() - v2.getMinor();
-
-		if (result != 0) {
-			return result;
-		}
-
-		result = v1.getMicro() - v2.getMicro();
-
-		if (result != 0) {
-			return result;
-		}
-
-		String s1 = v1.getQualifier();
-
-		return s1.compareTo(v2.getQualifier());
 	}
 
 	public static Path downloadFile(String urlString, Path cacheDirPath, String targetFileName) throws Exception {

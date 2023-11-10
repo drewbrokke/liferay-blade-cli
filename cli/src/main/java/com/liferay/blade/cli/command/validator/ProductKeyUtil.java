@@ -58,7 +58,9 @@ public class ProductKeyUtil {
 
 				productKeyInfo.setMinorProductKeyVersion(minorProductKeyVersion);
 
-				if (Objects.equals(minorProductKeyVersion.getType(), "q")) {
+				if (Objects.equals(productKeyInfo.getProduct(), "dxp") &&
+					Objects.equals(minorProductKeyVersion.getType(), "q")) {
+
 					productKeyInfo.setQuarterly(true);
 				}
 			});

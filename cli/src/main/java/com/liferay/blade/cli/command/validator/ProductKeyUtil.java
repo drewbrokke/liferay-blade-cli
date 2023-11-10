@@ -43,18 +43,18 @@ public class ProductKeyUtil {
 
 		_withGroup(
 			matcher, "product",
-			product -> {
-				productKeyInfo.setProduct(product);
+			group -> {
+				productKeyInfo.setProduct(group);
 
-				productKeyInfo.setProductRank(ProductKeyUtil.products.indexOf(product));
+				productKeyInfo.setProductRank(ProductKeyUtil.products.indexOf(group));
 			});
 		_withGroup(
 			matcher, "major",
-			major -> productKeyInfo.setMajorProductKeyVersion(new ProductKeyVersion(major)));
+			group -> productKeyInfo.setMajorProductKeyVersion(new ProductKeyVersion(group)));
 		_withGroup(
 			matcher, "minor",
-			minor -> {
-				ProductKeyVersion minorProductKeyVersion = new ProductKeyVersion(minor);
+			group -> {
+				ProductKeyVersion minorProductKeyVersion = new ProductKeyVersion(group);
 
 				productKeyInfo.setMinorProductKeyVersion(minorProductKeyVersion);
 
@@ -66,7 +66,7 @@ public class ProductKeyUtil {
 			});
 		_withGroup(
 			matcher, "micro",
-			micro -> productKeyInfo.setMicroProductKeyVersion(new ProductKeyVersion(micro)));
+			group -> productKeyInfo.setMicroProductKeyVersion(new ProductKeyVersion(group)));
 
 		return productKeyInfo;
 	}
@@ -75,14 +75,6 @@ public class ProductKeyUtil {
 		try {
 			 consumer.accept(matcher.group(groupName));
 		} catch (Exception ignored) {
-		}
-	}
-
-	private static String _getGroup(Matcher matcher, String groupName) {
-		try {
-			return matcher.group(groupName);
-		} catch (Exception e) {
-			return null;
 		}
 	}
 

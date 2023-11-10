@@ -748,18 +748,6 @@ public class BladeUtil {
 		}
 	}
 
-	public static boolean verifyCommerceWorkspaceProduct(String product) {
-		Matcher matcher = _productCommerceVersionPattern.matcher(product);
-
-		return matcher.matches();
-	}
-
-	public static boolean verifyPortalDxpWorkspaceProduct(String product) {
-		Matcher matcher = _productPortalDXPVersionPattern.matcher(product);
-
-		return matcher.matches();
-	}
-
 	public static void writePropertyValue(File propertyFile, String key, String value) throws Exception {
 		String property = System.lineSeparator() + key + "=" + value;
 
@@ -903,12 +891,7 @@ public class BladeUtil {
 	private static final String _PRODUCT_INFO_URL = "https://releases.liferay.com/tools/workspace/.product_info.json";
 
 	private static final Pattern _microPattern = Pattern.compile("((([efs])p)|(ga)|(u))([0-9]+)(-[0-9]+)?");
-	private static final Pattern _productCommerceVersionPattern = Pattern.compile(
-		"^(commerce)-([1-9]\\d|[0-9])\\.([0-9]\\d|\\d).([0-9]\\d|\\d)(-(([1-9]\\d|[0-9])\\.([1-9]\\d|[0-9])$)+)*");
 	private static Map<String, Object> _productInfoMap = Collections.emptyMap();
-	private static final Pattern _productPortalDXPVersionPattern = Pattern.compile(
-		"^(portal|dxp)-((([1-9]\\d|[0-9])\\.([0-9]\\d|\\d))-(((([efsd])([pe]))|u|ga)([0-9]\\d*)$)+)|" +
-			"((\\d{4})\\.([qQ]\\d)\\.\\d)");
 	private static final File _workspaceCacheDir = new File(
 		System.getProperty("user.home"), _DEFAULT_WORKSPACE_CACHE_DIR_NAME);
 

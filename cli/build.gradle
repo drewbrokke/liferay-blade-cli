@@ -19,6 +19,7 @@ buildscript {
 }
 
 apply plugin: "biz.aQute.bnd.builder"
+apply plugin: "idea"
 apply plugin: "java-library"
 apply plugin: "maven-publish"
 
@@ -110,6 +111,9 @@ dependencies {
 	api name: "org.objectweb.asm.commons-6.0.0"
 	api name: "org.objectweb.asm.tree-6.0.0"
 	api name: "org.objectweb.asm.util-6.0.0"
+
+	// com.fasterxml.jackson.core:jackson-databind:2.12.5
+	implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: "2.12.5"
 
 	bladeExtensions group: "com.liferay.blade", name: "com.liferay.blade.extensions.maven.profile", version: "1.0.39-SNAPSHOT"
 	bladeExtensions group: "com.liferay.blade", name: "com.liferay.project.templates.client.extension", version: "1.0.6-SNAPSHOT"

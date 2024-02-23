@@ -331,7 +331,7 @@ public class BladeUtil {
 		JsonSlurper jsonSlurper = new JsonSlurper();
 
 		try {
-			Path productInfoPath = downloadFile(_PRODUCT_INFO_URL, _workspaceCacheDir.toPath(), ".product_info.json");
+			Path productInfoPath = downloadFile(_PRODUCT_INFO_URL, _workspaceCacheDir.toPath(), "releases.json");
 
 			try (BufferedReader reader = Files.newBufferedReader(productInfoPath)) {
 				_productInfoMap = (Map<String, Object>)jsonSlurper.parse(reader);
@@ -342,7 +342,7 @@ public class BladeUtil {
 				exception1.printStackTrace(printStream);
 			}
 
-			try (InputStream resourceAsStream = BladeUtil.class.getResourceAsStream("/.product_info.json")) {
+			try (InputStream resourceAsStream = BladeUtil.class.getResourceAsStream("/releases.json")) {
 				_productInfoMap = (Map<String, Object>)jsonSlurper.parse(resourceAsStream);
 			}
 			catch (Exception exception2) {
@@ -857,7 +857,7 @@ public class BladeUtil {
 
 	private static final String _GRADLEW_WINDOWS_FILE_NAME = "gradlew.bat";
 
-	private static final String _PRODUCT_INFO_URL = "https://releases.liferay.com/tools/workspace/.product_info.json";
+	private static final String _PRODUCT_INFO_URL = "https://releases.liferay.com/releases.json";
 
 	private static final Pattern _microPattern = Pattern.compile("((([efs])p)|(ga)|(u))([0-9]+)(-[0-9]+)?");
 	private static Map<String, Object> _productInfoMap = Collections.emptyMap();

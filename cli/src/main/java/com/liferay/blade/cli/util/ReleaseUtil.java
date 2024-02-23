@@ -13,9 +13,12 @@ import java.time.temporal.ChronoUnit;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * @author Drew Brokke
@@ -28,6 +31,29 @@ public class ReleaseUtil {
 			String releaseKey, Function<ReleaseProperties, T> function) {
 
 		return function.apply(getReleaseProperties(releaseKey));
+	}
+
+
+	public static Stream<ReleaseProperties> getAllReleaseProperties(boolean promoted) {
+		return getAllReleaseEntries(promoted).map(ReleaseEntry::getReleaseKey).map(ReleaseUtil::getReleaseProperties);
+	}
+
+	public static Stream<ReleaseEntry> getAllReleaseEntries(boolean promoted) {
+		Predicate<ReleaseEntry> predicate = releaseEntry -> true;
+
+		if (promoted) {
+			predicate = ReleaseEntry::isPromoted;
+		}
+
+		return INSTANCE._releaseEntries.stream().filter(predicate);
+	}
+
+	public static <T> Stream<T> getFromReleaseEntries(boolean promoted, Function<ReleaseEntry, T> function) {
+		return getAllReleaseEntries(promoted).map(function);
+	}
+
+	public static <T> Stream<T> getFromReleaseProperties(boolean promoted, Function<ReleaseProperties, T> function) {
+		return getAllReleaseProperties(promoted).map(function);
 	}
 
 	public static ReleaseProperties getReleaseProperties(String releaseKey) {
@@ -207,7 +233,7 @@ public class ReleaseUtil {
 	private static class ReleaseEntries extends ArrayList<ReleaseEntry> {
 	}
 
-	private static class ReleaseEntry {
+	public static class ReleaseEntry {
 
 		public String getProduct() {
 			return _product;

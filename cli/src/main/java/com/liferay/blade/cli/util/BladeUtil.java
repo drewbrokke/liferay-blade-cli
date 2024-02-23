@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -391,50 +390,17 @@ public class BladeUtil {
 
 	@SuppressWarnings("unchecked")
 	public static List<String> getWorkspaceProductKeys(boolean promoted) {
-		Map<String, Object> productInfos = getProductInfos();
+		List<String> workspaceProductKeys = new ArrayList<>();
 
-		return productInfos.keySet(
-		).stream(
-		).filter(
-			key -> Objects.nonNull(productInfos.get(key))
-		).filter(
-			key -> {
-				ProductInfo productInfo = new ProductInfo((Map<String, String>)productInfos.get(key));
+		for (ReleaseUtil.ReleaseEntry releaseEntry : ReleaseUtil.getAllReleaseEntries(promoted).collect(Collectors.toList())) {
+			ReleaseUtil.ReleaseProperties releaseProperties = ReleaseUtil.getReleaseProperties(releaseEntry.getReleaseKey());
 
-				if (productInfo.getTargetPlatformVersion() == null) {
-					return false;
-				}
-
-				if (promoted && !productInfo.isPromoted()) {
-					return false;
-				}
-
-				return true;
+			if (releaseProperties.getTargetPlatformVersion() != null) {
+				workspaceProductKeys.add(releaseEntry.getReleaseKey());
 			}
-		).sorted(
-			ProductKeyUtil.comparator
-		).collect(
-			Collectors.toList()
-		);
-	}
+		}
 
-	@SuppressWarnings("unchecked")
-	public static Set<String> getWorkspaceProductTargetPlatformVersions(boolean promoted) {
-		Map<String, Object> productInfos = getProductInfos();
-
-		return productInfos.entrySet(
-		).stream(
-		).filter(
-			entry -> Objects.nonNull(productInfos.get(entry.getKey()))
-		).map(
-			entry -> new ProductInfo((Map<String, String>)entry.getValue())
-		).filter(
-			product -> Objects.nonNull(product.getTargetPlatformVersion()) && (!promoted || product.isPromoted())
-		).map(
-			ProductInfo::getTargetPlatformVersion
-		).collect(
-			Collectors.toSet()
-		);
+		return workspaceProductKeys;
 	}
 
 	public static boolean hasGradleWrapper(File dir) {

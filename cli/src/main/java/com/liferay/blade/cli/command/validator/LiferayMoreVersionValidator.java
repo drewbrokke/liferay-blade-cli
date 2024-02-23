@@ -10,11 +10,13 @@ import com.beust.jcommander.ParameterException;
 import com.liferay.blade.cli.WorkspaceConstants;
 import com.liferay.blade.cli.util.BladeUtil;
 import com.liferay.blade.cli.util.ProductKeyUtil;
+import com.liferay.blade.cli.util.ReleaseUtil;
 import com.liferay.project.templates.extensions.util.VersionUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author Simon Jiang
@@ -23,6 +25,11 @@ public class LiferayMoreVersionValidator implements ValidatorSupplier {
 
 	@Override
 	public List<String> get() {
+		ReleaseUtil.getFromReleaseProperties(
+				false, ReleaseUtil.ReleaseProperties::getTargetPlatformVersion
+		).collect(
+				Collectors.toList()
+		);
 		return BladeUtil.getWorkspaceProductKeys(false);
 	}
 
@@ -30,7 +37,11 @@ public class LiferayMoreVersionValidator implements ValidatorSupplier {
 	public void validate(String name, String value) throws ParameterException {
 		List<String> possibleValues = new ArrayList<>(get());
 
-		Set<String> allTargetPlatformVersions = BladeUtil.getWorkspaceProductTargetPlatformVersions(false);
+		Set<String> allTargetPlatformVersions = ReleaseUtil.getFromReleaseProperties(
+			false, ReleaseUtil.ReleaseProperties::getTargetPlatformVersion
+		).collect(
+			Collectors.toSet()
+		);
 
 		possibleValues.addAll(WorkspaceConstants.originalLiferayVersions);
 

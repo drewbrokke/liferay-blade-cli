@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -331,7 +330,7 @@ public class BladeUtil {
 		JsonSlurper jsonSlurper = new JsonSlurper();
 
 		try {
-			Path productInfoPath = downloadFile(_PRODUCT_INFO_URL, _workspaceCacheDir.toPath(), ".product_info.json");
+			Path productInfoPath = downloadFile(_PRODUCT_INFO_URL, _workspaceCacheDir.toPath(), "releases.json");
 
 			try (BufferedReader reader = Files.newBufferedReader(productInfoPath)) {
 				_productInfoMap = (Map<String, Object>)jsonSlurper.parse(reader);
@@ -342,7 +341,7 @@ public class BladeUtil {
 				exception1.printStackTrace(printStream);
 			}
 
-			try (InputStream resourceAsStream = BladeUtil.class.getResourceAsStream("/.product_info.json")) {
+			try (InputStream resourceAsStream = BladeUtil.class.getResourceAsStream("/releases.json")) {
 				_productInfoMap = (Map<String, Object>)jsonSlurper.parse(resourceAsStream);
 			}
 			catch (Exception exception2) {
@@ -387,54 +386,6 @@ public class BladeUtil {
 		templatesFiles.add(extensionTemplates.toFile());
 
 		return ProjectTemplates.getTemplates(templatesFiles);
-	}
-
-	@SuppressWarnings("unchecked")
-	public static List<String> getWorkspaceProductKeys(boolean promoted) {
-		Map<String, Object> productInfos = getProductInfos();
-
-		return productInfos.keySet(
-		).stream(
-		).filter(
-			key -> Objects.nonNull(productInfos.get(key))
-		).filter(
-			key -> {
-				ProductInfo productInfo = new ProductInfo((Map<String, String>)productInfos.get(key));
-
-				if (productInfo.getTargetPlatformVersion() == null) {
-					return false;
-				}
-
-				if (promoted && !productInfo.isPromoted()) {
-					return false;
-				}
-
-				return true;
-			}
-		).sorted(
-			ProductKeyUtil.comparator
-		).collect(
-			Collectors.toList()
-		);
-	}
-
-	@SuppressWarnings("unchecked")
-	public static Set<String> getWorkspaceProductTargetPlatformVersions(boolean promoted) {
-		Map<String, Object> productInfos = getProductInfos();
-
-		return productInfos.entrySet(
-		).stream(
-		).filter(
-			entry -> Objects.nonNull(productInfos.get(entry.getKey()))
-		).map(
-			entry -> new ProductInfo((Map<String, String>)entry.getValue())
-		).filter(
-			product -> Objects.nonNull(product.getTargetPlatformVersion()) && (!promoted || product.isPromoted())
-		).map(
-			ProductInfo::getTargetPlatformVersion
-		).collect(
-			Collectors.toSet()
-		);
 	}
 
 	public static boolean hasGradleWrapper(File dir) {
@@ -857,7 +808,7 @@ public class BladeUtil {
 
 	private static final String _GRADLEW_WINDOWS_FILE_NAME = "gradlew.bat";
 
-	private static final String _PRODUCT_INFO_URL = "https://releases.liferay.com/tools/workspace/.product_info.json";
+	private static final String _PRODUCT_INFO_URL = "https://releases.liferay.com/releases.json";
 
 	private static final Pattern _microPattern = Pattern.compile("((([efs])p)|(ga)|(u))([0-9]+)(-[0-9]+)?");
 	private static Map<String, Object> _productInfoMap = Collections.emptyMap();

@@ -18,6 +18,8 @@ Private-Package:\
 	\
 	aQute.service.reporter;-split-package:=merge-first,\
 	\
+	com.fasterxml.jackson.*,\
+    \
 	com.liferay.blade.gradle.tooling,\
 	\
 	groovy.json,\
@@ -188,8 +190,6 @@ Private-Package:\
 	org.gradle.tooling.provider.model.internal;-split-package:=merge-first,\
 	org.gradle.util;-split-package:=merge-first,\
 	org.gradle.wrapper;-split-package:=merge-first,\
-	\
-	org.json,\
 	\
 	org.jsoup,\
 	org.jsoup.helper,\

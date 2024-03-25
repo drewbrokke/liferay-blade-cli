@@ -5,14 +5,12 @@
 
 package com.liferay.blade.cli.command;
 
-import aQute.bnd.version.Version;
-
 import com.liferay.blade.cli.BladeCLI;
 import com.liferay.blade.cli.BladeSettings;
 import com.liferay.blade.cli.WorkspaceProvider;
 import com.liferay.blade.cli.gradle.GradleExec;
 import com.liferay.blade.cli.util.BladeUtil;
-import com.liferay.blade.cli.util.ProductInfo;
+import com.liferay.blade.cli.util.ReleaseUtil;
 import com.liferay.project.templates.ProjectTemplates;
 import com.liferay.project.templates.extensions.ProjectTemplatesArgs;
 import com.liferay.project.templates.extensions.util.FileUtil;
@@ -56,9 +54,14 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		InitArgs initArgs = getArgs();
 
 		if (initArgs.isList()) {
-			List<String> keys = BladeUtil.getWorkspaceProductKeys(!initArgs.isAll());
-
-			keys.forEach(bladeCLI::out);
+			ReleaseUtil.releaseEntriesStream(
+			).filter(
+					releaseEntry -> initArgs.isAll() || releaseEntry.isPromoted()
+			).map(
+				ReleaseUtil.ReleaseEntry::getReleaseKey
+			).forEach(
+				bladeCLI::out
+			);
 
 			return;
 		}
@@ -204,21 +207,15 @@ public class InitCommand extends BaseCommand<InitArgs> {
 				return;
 			}
 
-			Object productInfoObject = productInfos.get(workspaceProductKey);
+			ReleaseUtil.ReleaseProperties releaseProperties = ReleaseUtil.getReleaseProperties(workspaceProductKey);
 
-			if (productInfoObject == null) {
+			if (releaseProperties == null) {
 				_addError("Unable to get product info for selected version " + workspaceProductKey);
 
 				return;
 			}
 
-			ProductInfo productInfo = new ProductInfo((Map<String, String>)productInfoObject);
-
-			Version targetPlatformVersion = _makeCompatibleVersion(productInfo.getTargetPlatformVersion());
-
-			liferayVersion = new String(
-				targetPlatformVersion.getMajor() + "." + targetPlatformVersion.getMinor() + "." +
-					targetPlatformVersion.getMicro());
+			liferayVersion = releaseProperties.getTargetPlatformVersion();
 		}
 		else {
 			workspaceProductKey = _setProductAndVersionForMaven(productInfos, initArgs);
@@ -226,9 +223,9 @@ public class InitCommand extends BaseCommand<InitArgs> {
 			liferayVersion = initArgs.getLiferayVersion();
 		}
 
-		Object productInfoObject = productInfos.get(workspaceProductKey);
+		ReleaseUtil.ReleaseEntry releaseEntry = ReleaseUtil.getReleaseEntry(workspaceProductKey);
 
-		if (productInfoObject == null) {
+		if (releaseEntry == null) {
 			_addError("Unable to get product info for selected version " + workspaceProductKey);
 
 			return;
@@ -246,6 +243,10 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		if (mavenBuild) {
 			projectTemplatesArgs.setLiferayProduct(initArgs.getLiferayProduct());
 		}
+		else {
+			projectTemplatesArgs.setLiferayProduct(releaseEntry.getProduct());
+		}
+
 
 		String template = "workspace";
 
@@ -321,26 +322,22 @@ public class InitCommand extends BaseCommand<InitArgs> {
 	}
 
 	private String _getDefaultProductKey(InitArgs initArgs) throws Exception {
-		String liferayVersion = initArgs.getLiferayVersion();
+		ReleaseUtil.ReleaseEntry releaseEntry = ReleaseUtil.getReleaseEntry(initArgs.getLiferayVersion());
 
-		if (liferayVersion.startsWith("portal") || liferayVersion.startsWith("dxp") ||
-			liferayVersion.startsWith("commerce")) {
-
-			return initArgs.getLiferayVersion();
+		if (releaseEntry != null) {
+			return releaseEntry.getReleaseKey();
 		}
 
-		List<String> productInfoKeys = BladeUtil.getWorkspaceProductKeys(false);
+		Optional<String> defaultVersion = ReleaseUtil.withReleaseEntriesStream(
+			stream -> stream.filter(
+				releaseEntry1 -> Objects.equals(releaseEntry1.getProduct(), initArgs.getLiferayProduct())
+			).filter(
+				releaseEntry1 -> releaseEntry1.getReleaseKey().endsWith(initArgs.getLiferayVersion())
+			).map(
+				ReleaseUtil.ReleaseEntry::getReleaseKey
+			).findFirst());
 
-		Optional<String> defaultVersion = productInfoKeys.stream(
-		).filter(
-			value -> value.startsWith(initArgs.getLiferayProduct() + "-" + initArgs.getLiferayVersion())
-		).findFirst();
-
-		if (!defaultVersion.isPresent()) {
-			return initArgs.getLiferayVersion();
-		}
-
-		return defaultVersion.get();
+		return defaultVersion.orElse(initArgs.getLiferayVersion());
 	}
 
 	private boolean _isPluginsSDK(File dir) {
@@ -394,21 +391,6 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		}
 
 		return false;
-	}
-
-	private Version _makeCompatibleVersion(String targetPlatformVersion) {
-		int dash = targetPlatformVersion.indexOf("-");
-
-		Version productTargetPlatformVersion = null;
-
-		if (dash != -1) {
-			productTargetPlatformVersion = Version.parseVersion(targetPlatformVersion.substring(0, dash));
-		}
-		else {
-			productTargetPlatformVersion = Version.parseVersion(targetPlatformVersion);
-		}
-
-		return productTargetPlatformVersion;
 	}
 
 	private void _moveContentsToDirectory(File src, File dest) throws Exception {
@@ -484,37 +466,14 @@ public class InitCommand extends BaseCommand<InitArgs> {
 	private String _setProductAndVersionForMaven(Map<String, Object> productInfos, InitArgs initArgs) throws Exception {
 		String possibleProductKey = _getDefaultProductKey(initArgs);
 
-		if (possibleProductKey.startsWith("portal") || possibleProductKey.startsWith("dxp") ||
-			possibleProductKey.startsWith("commerce")) {
+		ReleaseUtil.ReleaseEntry releaseEntry = ReleaseUtil.getReleaseEntry(possibleProductKey);
 
-			Object productInfoObject = productInfos.get(possibleProductKey);
+		if (releaseEntry != null) {
+			initArgs.setLiferayProduct(releaseEntry.getProduct());
 
-			if (Objects.nonNull(productInfoObject)) {
-				ProductInfo productInfo = new ProductInfo((Map<String, String>)productInfoObject);
-
-				initArgs.setLiferayVersion(productInfo.getTargetPlatformVersion());
-
-				String[] productKeyValues = possibleProductKey.split("-");
-
-				initArgs.setLiferayProduct(productKeyValues[0]);
-
-				return possibleProductKey;
-			}
-		}
-		else {
-			for (Map.Entry<String, Object> entryKey : productInfos.entrySet()) {
-				ProductInfo productInfo = new ProductInfo((Map<String, String>)entryKey.getValue());
-
-				if (Objects.equals(possibleProductKey, productInfo.getTargetPlatformVersion())) {
-					possibleProductKey = entryKey.getKey();
-
-					String[] productKeyValues = possibleProductKey.split("-");
-
-					initArgs.setLiferayProduct(productKeyValues[0]);
-
-					return possibleProductKey;
-				}
-			}
+			initArgs.setLiferayVersion(
+					ReleaseUtil.withReleaseEntry(
+							possibleProductKey, ReleaseUtil.ReleaseEntry::getTargetPlatformVersion));
 		}
 
 		return null;

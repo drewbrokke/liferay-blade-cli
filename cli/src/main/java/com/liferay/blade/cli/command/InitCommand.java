@@ -56,7 +56,7 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		if (initArgs.isList()) {
 			ReleaseUtil.releaseEntriesStream(
 			).filter(
-					releaseEntry -> initArgs.isAll() || releaseEntry.isPromoted()
+				releaseEntry -> initArgs.isAll() || releaseEntry.isPromoted()
 			).map(
 				ReleaseUtil.ReleaseEntry::getReleaseKey
 			).forEach(
@@ -194,8 +194,6 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		String liferayVersion;
 		String workspaceProductKey;
 
-		Map<String, Object> productInfos = BladeUtil.getProductInfos(initArgs.isTrace(), bladeCLI.error());
-
 		if (!mavenBuild) {
 			workspaceProductKey = _getDefaultProductKey(initArgs);
 
@@ -218,7 +216,7 @@ public class InitCommand extends BaseCommand<InitArgs> {
 			liferayVersion = releaseProperties.getTargetPlatformVersion();
 		}
 		else {
-			workspaceProductKey = _setProductAndVersionForMaven(productInfos, initArgs);
+			workspaceProductKey = _setProductAndVersionForMaven(initArgs);
 
 			liferayVersion = initArgs.getLiferayVersion();
 		}
@@ -246,7 +244,6 @@ public class InitCommand extends BaseCommand<InitArgs> {
 		else {
 			projectTemplatesArgs.setLiferayProduct(releaseEntry.getProduct());
 		}
-
 
 		String template = "workspace";
 
@@ -332,7 +329,10 @@ public class InitCommand extends BaseCommand<InitArgs> {
 			stream -> stream.filter(
 				releaseEntry1 -> Objects.equals(releaseEntry1.getProduct(), initArgs.getLiferayProduct())
 			).filter(
-				releaseEntry1 -> releaseEntry1.getReleaseKey().endsWith(initArgs.getLiferayVersion())
+				releaseEntry1 -> releaseEntry1.getReleaseKey(
+				).endsWith(
+					initArgs.getLiferayVersion()
+				)
 			).map(
 				ReleaseUtil.ReleaseEntry::getReleaseKey
 			).findFirst());
@@ -463,7 +463,7 @@ public class InitCommand extends BaseCommand<InitArgs> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private String _setProductAndVersionForMaven(Map<String, Object> productInfos, InitArgs initArgs) throws Exception {
+	private String _setProductAndVersionForMaven(InitArgs initArgs) throws Exception {
 		String possibleProductKey = _getDefaultProductKey(initArgs);
 
 		ReleaseUtil.ReleaseEntry releaseEntry = ReleaseUtil.getReleaseEntry(possibleProductKey);
@@ -472,8 +472,7 @@ public class InitCommand extends BaseCommand<InitArgs> {
 			initArgs.setLiferayProduct(releaseEntry.getProduct());
 
 			initArgs.setLiferayVersion(
-					ReleaseUtil.withReleaseEntry(
-							possibleProductKey, ReleaseUtil.ReleaseEntry::getTargetPlatformVersion));
+				ReleaseUtil.withReleaseEntry(possibleProductKey, ReleaseUtil.ReleaseEntry::getTargetPlatformVersion));
 		}
 
 		return null;

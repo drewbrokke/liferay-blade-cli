@@ -11,8 +11,6 @@ import com.liferay.blade.cli.command.SamplesCommand;
 import com.liferay.project.templates.ProjectTemplates;
 import com.liferay.project.templates.extensions.util.ProjectTemplatesUtil;
 
-import groovy.json.JsonSlurper;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -39,7 +37,6 @@ import java.security.ProtectionDomain;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -315,43 +312,6 @@ public class BladeUtil {
 
 			return attributes.getValue(propertyName);
 		}
-	}
-
-	public static Map<String, Object> getProductInfos() {
-		return getProductInfos(false, null);
-	}
-
-	@SuppressWarnings("unchecked")
-	public static synchronized Map<String, Object> getProductInfos(boolean trace, PrintStream printStream) {
-		if (!_productInfoMap.isEmpty()) {
-			return _productInfoMap;
-		}
-
-		JsonSlurper jsonSlurper = new JsonSlurper();
-
-		try {
-			Path productInfoPath = downloadFile(_PRODUCT_INFO_URL, _workspaceCacheDir.toPath(), "releases.json");
-
-			try (BufferedReader reader = Files.newBufferedReader(productInfoPath)) {
-				_productInfoMap = (Map<String, Object>)jsonSlurper.parse(reader);
-			}
-		}
-		catch (Exception exception1) {
-			if (trace && (printStream != null)) {
-				exception1.printStackTrace(printStream);
-			}
-
-			try (InputStream resourceAsStream = BladeUtil.class.getResourceAsStream("/releases.json")) {
-				_productInfoMap = (Map<String, Object>)jsonSlurper.parse(resourceAsStream);
-			}
-			catch (Exception exception2) {
-				if (trace && (printStream != null)) {
-					exception2.printStackTrace(printStream);
-				}
-			}
-		}
-
-		return _productInfoMap;
 	}
 
 	public static Properties getProperties(File file) {
@@ -802,17 +762,10 @@ public class BladeUtil {
 		"build." + System.getenv("HOSTNAME") + ".properties", "build.properties"
 	};
 
-	private static final String _DEFAULT_WORKSPACE_CACHE_DIR_NAME = ".liferay/workspace";
-
 	private static final String _GRADLEW_UNIX_FILE_NAME = "gradlew";
 
 	private static final String _GRADLEW_WINDOWS_FILE_NAME = "gradlew.bat";
 
-	private static final String _PRODUCT_INFO_URL = "https://releases.liferay.com/releases.json";
-
 	private static final Pattern _microPattern = Pattern.compile("((([efs])p)|(ga)|(u))([0-9]+)(-[0-9]+)?");
-	private static Map<String, Object> _productInfoMap = Collections.emptyMap();
-	private static final File _workspaceCacheDir = new File(
-		System.getProperty("user.home"), _DEFAULT_WORKSPACE_CACHE_DIR_NAME);
 
 }

@@ -97,6 +97,8 @@ public class ResourceUtil {
 			try {
 				Path path = _downloadFile(url.toString(), cacheDir.toPath(), targetFileName);
 
+				Files.setLastModifiedTime(path, FileTime.from(Instant.now()));
+
 				return Files.newInputStream(path);
 			}
 			catch (Exception exception) {
@@ -111,7 +113,7 @@ public class ResourceUtil {
 	}
 
 	public static <T> T readJson(Class<T> clazz, Resolver... resolvers) {
-		return _withInputStream(inputStream -> new ObjectMapper().readValue(inputStream, clazz), resolvers);
+		return _withInputStream(inputStream -> _objectMapper.readValue(inputStream, clazz), resolvers);
 	}
 
 	public static Properties readProperties(Resolver... resolvers) {
@@ -302,6 +304,6 @@ public class ResourceUtil {
 		throw new RuntimeException("Unable to get resource");
 	}
 
-//	private static final ObjectMapper _objectMapper = new ObjectMapper();
+	private static final ObjectMapper _objectMapper = new ObjectMapper();
 
 }

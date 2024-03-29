@@ -23,10 +23,8 @@ import java.util.stream.Stream;
  */
 public class ReleaseUtil {
 
-	public static final ReleaseUtil INSTANCE = new ReleaseUtil();
-
 	public static ReleaseEntry getReleaseEntry(String releaseKey) {
-		return INSTANCE._releaseEntryMap.getOrDefault(releaseKey, _EMPTY_RELEASE_ENTRY);
+		return _releaseUtil._releaseEntryMap.getOrDefault(releaseKey, _EMPTY_RELEASE_ENTRY);
 	}
 
 	public static ReleaseProperties getReleaseProperties(String releaseKey) {
@@ -34,11 +32,17 @@ public class ReleaseUtil {
 			return _EMPTY_RELEASE_PROPERTIES;
 		}
 
-		return INSTANCE._releasePropertiesMap.computeIfAbsent(releaseKey, INSTANCE::_createReleaseProperties);
+		return _releaseUtil._releasePropertiesMap.computeIfAbsent(releaseKey, _releaseUtil::_createReleaseProperties);
+	}
+
+	public static void refreshReleases() {
+		System.out.println("Checking for new releases...");
+
+		_releaseUtil = new ReleaseUtil(0);
 	}
 
 	public static Stream<ReleaseEntry> releaseEntriesStream() {
-		return INSTANCE._releaseEntries.stream();
+		return _releaseUtil._releaseEntries.stream();
 	}
 
 	public static <T> T withReleaseEntriesStream(Function<Stream<ReleaseEntry>, T> function) {
@@ -67,6 +71,10 @@ public class ReleaseUtil {
 			return _releaseKey;
 		}
 
+		public String getTargetPlatformVersion() {
+			return _targetPlatformVersion;
+		}
+
 		public String getUrl() {
 			return _url;
 		}
@@ -89,10 +97,6 @@ public class ReleaseUtil {
 
 		@JsonProperty("releaseKey")
 		private String _releaseKey;
-
-		public String getTargetPlatformVersion() {
-			return _targetPlatformVersion;
-		}
 
 		@JsonProperty("targetPlatformVersion")
 		private String _targetPlatformVersion;
@@ -194,15 +198,7 @@ public class ReleaseUtil {
 
 	}
 
-	private ReleaseUtil() {
-		int maxAge = 30;
-
-		String refreshLiferayReleases = System.getProperty("refresh.liferay.releases");
-
-		if (refreshLiferayReleases != null) {
-			maxAge = 0;
-		}
-
+	private ReleaseUtil(int maxAge) {
 		File releasesJsonFile = new File(_workspaceCacheDir, "releases.json");
 
 		_releaseEntries = ResourceUtil.readJson(
@@ -212,6 +208,8 @@ public class ReleaseUtil {
 			ResourceUtil.getURLResolver(
 				_workspaceCacheDir, "https://releases-cdn.liferay.com/releases.json", "releases.json"),
 			ResourceUtil.getLocalFileResolver(releasesJsonFile), ResourceUtil.getClassLoaderResolver("/releases.json"));
+
+		_releaseEntryMap.clear();
 
 		for (ReleaseEntry releaseEntry : _releaseEntries) {
 			_releaseEntryMap.put(releaseEntry.getReleaseKey(), releaseEntry);
@@ -244,8 +242,11 @@ public class ReleaseUtil {
 		return new ReleaseProperties(properties);
 	}
 
-	private static final ReleaseProperties _EMPTY_RELEASE_PROPERTIES = new ReleaseProperties();
 	private static final ReleaseEntry _EMPTY_RELEASE_ENTRY = new ReleaseEntry();
+
+	private static final ReleaseProperties _EMPTY_RELEASE_PROPERTIES = new ReleaseProperties();
+
+	private static ReleaseUtil _releaseUtil = new ReleaseUtil(7);
 
 	private final ReleaseEntries _releaseEntries;
 	private final Map<String, ReleaseEntry> _releaseEntryMap = new HashMap<>();

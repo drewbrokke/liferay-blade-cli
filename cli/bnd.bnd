@@ -19,7 +19,7 @@ Private-Package:\
 	aQute.service.reporter;-split-package:=merge-first,\
 	\
 	com.fasterxml.jackson.*,\
-    \
+	\
 	com.liferay.blade.gradle.tooling,\
 	\
 	groovy.json,\

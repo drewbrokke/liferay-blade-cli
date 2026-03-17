@@ -38,6 +38,7 @@ tasks.register('dockerNexusStart', Exec)
 tasks.register('dockerNexusStop', Exec)
 tasks.register('dockerPublishRelease', Exec)
 tasks.register('dockerPublishSnapshots', Exec)
+tasks.register('updateProjectTemplatesDependency')
 
 String userHome = System.getProperty("user.home")
 
@@ -345,6 +346,54 @@ subprojects {
 	if (project.hasProperty("mavenLocal")) {
 		repositories {
 			mavenLocal()
+		}
+	}
+}
+
+configurations {
+	projectTemplates
+}
+
+dependencies {
+	projectTemplates group: "com.liferay", name: "com.liferay.project.templates", version: "latest.release"
+}
+
+updateProjectTemplatesDependency {
+	doFirst {
+		ResolvedArtifactResult resolvedArtifactResult = configurations.projectTemplates.incoming.artifacts.artifacts.first()
+
+		File projectTemplatesJar = resolvedArtifactResult.file
+		String projectTemplatesVersion = resolvedArtifactResult.variant.owner.version
+
+		assert projectTemplatesVersion
+
+		File projectTemplatesWorkspaceJar = zipTree(projectTemplatesJar).matching {
+			include "com.liferay.project.templates.workspace-*.jar"
+		}.singleFile
+
+		File settingsGradleFile = zipTree(projectTemplatesWorkspaceJar).matching {
+			include "**/settings.gradle"
+		}.singleFile
+
+		String workspaceVersion = settingsGradleFile.text.find('classpath group: "com.liferay", name: "com.liferay.gradle.plugins.workspace", version: "(.*?)"') {
+			_, version -> version
+		}
+
+		assert workspaceVersion
+
+		println "projectTemplatesVersion: ${projectTemplatesVersion}"
+		println "workspaceVersion: ${workspaceVersion}"
+
+		File buildGradleFile = file("cli/build.gradle")
+
+		buildGradleFile.text = buildGradleFile.text.replaceAll('api group: "com.liferay", name: "com.liferay.project.templates", version: "(.*?)"') {
+			"api group: \"com.liferay\", name: \"com.liferay.project.templates\", version: \"${projectTemplatesVersion}\""
+		}
+
+		File testFile = file("cli/src/test/java/com/liferay/blade/cli/command/InitCommandTest.java")
+
+		testFile.text = testFile.text.replaceAll('private static final String _GRADLE_PLUGINS_WORKSPACE_VERSION = "(.*?)";') {
+			"private static final String _GRADLE_PLUGINS_WORKSPACE_VERSION = \"${workspaceVersion}\";"
 		}
 	}
 }

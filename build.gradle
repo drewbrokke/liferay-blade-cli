@@ -55,6 +55,75 @@ boolean skipTests = project.hasProperty("skipTests")
 
 boolean skipScan = project.hasProperty("skipScan")
 
+tasks.register('updateProjectTemplatesDependency') {
+	doFirst {
+		URL metadataURL = new URL("https://repository.liferay.com/nexus/content/groups/public/com/liferay/com.liferay.project.templates/maven-metadata.xml")
+
+		String versionLine
+
+		metadataURL.readLines().each {
+			if (it.contains("<latest>")) {
+				versionLine = it
+			}
+		}
+
+		if (!versionLine) {
+			throw new GradleException("Could not find version from URL ${metadataURL}")
+		}
+
+		String version = versionLine.replace("<latest>", "").replace("</latest>", "").trim()
+
+
+		def config = project.configurations.create("projectDependency")
+		project.dependencies.add(config.name, "com.liferay:com.liferay.project.templates:${version}")
+
+		def theJar
+		config.incoming.files.each {
+			theJar = file(it)
+		}
+		assert theJar.exists()
+
+		project.copy {
+			from(zipTree(theJar))
+			into "${buildDir}/updateProjectTemplatesDependency"
+			include "com.liferay.project.templates.workspace-*.jar"
+		}
+
+		def theNextJar = fileTree("${buildDir}/updateProjectTemplatesDependency").singleFile
+
+		def theSettingsFile = zipTree(theNextJar).matching {
+			include "**/settings.gradle"
+		}.singleFile
+
+		String workspaceVersion
+		theSettingsFile.text.eachMatch('classpath group: "com.liferay", name: "com.liferay.gradle.plugins.workspace", version: "(.*?)"', {
+			x, y ->
+			workspaceVersion = y
+		})
+
+		println workspaceVersion
+
+		// api group: "com.liferay", name: "com.liferay.project.templates", version: "6.0.12"
+		File buildGradleFile = file("cli/build.gradle")
+		assert buildGradleFile.exists()
+
+		// private static final String _GRADLE_PLUGINS_WORKSPACE_VERSION = "16.0.1";
+		File testFile = file("cli/src/test/java/com/liferay/blade/cli/command/InitCommandTest.java")
+		assert testFile.exists()
+
+		buildGradleFile.text = buildGradleFile.text.replaceAll(
+			'api group: "com.liferay", name: "com.liferay.project.templates", version: "(.*?)"',
+			"api group: \"com.liferay\", name: \"com.liferay.project.templates\", version: \"${version}\""
+		)
+
+
+		testFile.text = testFile.text.replaceAll(
+			'private static final String _GRADLE_PLUGINS_WORKSPACE_VERSION = "(.*?)";',
+			"private static final String _GRADLE_PLUGINS_WORKSPACE_VERSION = \"${workspaceVersion}\";"
+		)
+	}
+}
+
 buildChangeLog {
 	changeLogHeader = "BLADE Version ${project.version}"
 	dirs = ["cli", "extensions", "gradle", "gradle-tooling", "libs"]

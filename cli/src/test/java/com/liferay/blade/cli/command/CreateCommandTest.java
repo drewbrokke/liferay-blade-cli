@@ -1349,6 +1349,8 @@ public class CreateCommandTest {
 
 		_makeWorkspace(workspace);
 
+		_pinServiceBuilderVersion(workspace);
+
 		File modulesDir = new File(workspace, "modules");
 
 		String projectPath = modulesDir.getAbsolutePath();
@@ -1391,6 +1393,8 @@ public class CreateCommandTest {
 		File workspace = new File(_rootDir, "workspace");
 
 		_makeWorkspace(workspace);
+
+		_pinServiceBuilderVersion(workspace);
 
 		File modulesDir = new File(workspace, "modules");
 
@@ -1451,6 +1455,8 @@ public class CreateCommandTest {
 		File workspace = new File(_rootDir, "workspace");
 
 		_makeWorkspace(workspace);
+
+		_pinServiceBuilderVersion(workspace);
 
 		File modulesDir = new File(workspace, "modules");
 
@@ -2206,6 +2212,11 @@ public class CreateCommandTest {
 		_configureGradleProperties(workspace);
 	}
 
+	private void _pinServiceBuilderVersion(File workspace) throws Exception {
+		TestUtil.appendGradleProperty(
+			workspace, "com.liferay.portal.tools.service.builder.version", _SAFE_SERVICE_BUILDER_VERSION);
+	}
+
 	private void _resolveProject(BuildTask buildTask, String projectPath) throws Exception {
 		String version = System.getProperty("java.specification.version");
 
@@ -2247,6 +2258,8 @@ public class CreateCommandTest {
 			}
 		}
 	}
+
+	private static final String _SAFE_SERVICE_BUILDER_VERSION = "1.0.529";
 
 	private File _extensionsDir = null;
 	private File _rootDir = null;
